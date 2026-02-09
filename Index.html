@@ -350,12 +350,53 @@
       const PRECIO_BOLETA = 5000;
       let numerosSeleccionados = [];
 
+      const PRECIO_BOLETA = 5000;
+    let numerosSeleccionados = [];
+    let muestraInicial = []; // <--- NUEVA VARIABLE
+
+    // --- NUEVA FUNCIÓN: ELIGE 10 NÚMEROS AL AZAR POR CADA SERIE ---
+    function generarMuestra(datos) {
+      let grupos = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[], 7:[], 8:[], 9:[]};
+      
+      // 1. Clasificamos los números DISPONIBLES por su primer dígito
+      datos.forEach(fila => {
+        let num = String(fila[0]).trim();
+        let estado = String(fila[1]).trim();
+        
+        if (estado === 'Disponible') {
+          // Si el número es '005', el primer dígito es '0'. Si es '150', es '1'.
+          // Aseguramos que tenga 3 dígitos (rellenando con ceros a la izquierda si hace falta)
+          let numNormalizado = num.padStart(3, '0');
+          let primerDigito = numNormalizado.charAt(0);
+          
+          if (grupos[primerDigito]) {
+            grupos[primerDigito].push(num);
+          }
+        }
+      });
+
+      // 2. Elegimos 10 al azar de cada grupo
+      muestraInicial = [];
+      for (let i = 0; i <= 9; i++) {
+        let serie = grupos[i];
+        // Barajamos (Shuffle) la serie
+        serie.sort(() => 0.5 - Math.random());
+        // Tomamos los primeros 10 (o menos si no hay tantos)
+        let seleccion = serie.slice(0, 10);
+        muestraInicial = muestraInicial.concat(seleccion);
+      }
+      console.log("Muestra generada:", muestraInicial.length, "números.");
+    }
+
       window.onload = function() {
         google.script.run.withSuccessHandler(pintarNumeros).obtenerDatos();
       };
 
       function pintarNumeros(datos) {
+        generarMuestra(datos); // <--- ¡AGREGA ESTA LÍNEA AQUÍ!
+        
         const contenedor = document.getElementById('grid');
+        // ... (el resto de tu función sigue EXACTAMENTE IGUAL) ...
         document.getElementById('loading').style.display = 'none';
         contenedor.innerHTML = ""; 
         
@@ -404,40 +445,45 @@
         filtrarNumeros(); 
       }
 
-      // --- FUNCIÓN DE FILTRADO INTELIGENTE (Texto + Checkbox) ---
+      // --- FUNCIÓN DE FILTRADO INTELIGENTE (Vitrina vs Búsqueda) ---
       function filtrarNumeros() {
-        // 1. Obtenemos lo que escribió el usuario
         const busqueda = document.getElementById('input-busqueda').value.trim();
-        // 2. Obtenemos si el checkbox está marcado (true o false)
         const chk = document.getElementById('chk-disponibles');
         const soloDisponibles = chk ? chk.checked : false;
         
         const grid = document.getElementById('grid');
         const botones = grid.getElementsByClassName('btn-numero');
 
+        const modoVitrina = (busqueda === ""); // ¿El buscador está vacío?
+
         for (let btn of botones) {
-          // El ID es "btn-001", quitamos "btn-" para tener el número puro
           const numeroDelBoton = btn.id.replace('btn-', '');
-          
-          // Verificamos si este botón es de los disponibles
           const esDisponible = btn.classList.contains('disponible');
-
-          // --- REGLAS DE FILTRO ---
           
-          // Regla 1: ¿Coincide con el número buscado? (Si no escribió nada, todos coinciden)
-          const coincideTexto = numeroDelBoton.includes(busqueda);
-          
-          // Regla 2: ¿Cumple con ser disponible?
-          // Si el checkbox NO está marcado (!soloDisponibles), nos da igual si es ocupado o no.
-          // Si el checkbox SÍ está marcado, forzamos a que (esDisponible) sea true.
-          const cumpleEstado = !soloDisponibles || esDisponible;
+          let mostrar = false;
 
-          // Si cumple AMBAS cosas, lo mostramos
-          if (coincideTexto && cumpleEstado) {
-            btn.style.display = 'flex';
+          if (modoVitrina) {
+            // MODO 1: VITRINA (Cliente acaba de entrar)
+            const estaEnMuestra = muestraInicial.includes(numeroDelBoton);
+            
+            if (soloDisponibles) {
+               // Si el filtro está activo, solo mostramos la muestra verde
+               mostrar = estaEnMuestra;
+            } else {
+               // Si quita el filtro, mostramos la muestra + los ocupados (para que se vea movimiento)
+               mostrar = estaEnMuestra || !esDisponible;
+            }
+
           } else {
-            btn.style.display = 'none';
+            // MODO 2: BÚSQUEDA (Cliente escribió un número)
+            // Aquí ignoramos la vitrina y buscamos en TODOS los números
+            const coincideTexto = numeroDelBoton.includes(busqueda);
+            const cumpleEstado = !soloDisponibles || esDisponible;
+            
+            mostrar = coincideTexto && cumpleEstado;
           }
+
+          btn.style.display = mostrar ? 'flex' : 'none';
         }
       }
 
