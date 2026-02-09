@@ -389,7 +389,15 @@
     }
 
       window.onload = function() {
-        google.script.run.withSuccessHandler(pintarNumeros).obtenerDatos();
+        google.script.run
+          .withSuccessHandler(pintarNumeros) // Si todo sale bien
+          .withFailureHandler(function(error) { // Si algo sale mal
+             document.getElementById('loading').innerHTML = 
+               `<div style="color:red; font-weight:bold; padding:20px; border:2px solid red; border-radius:10px; background:#fff;">
+                  ☠️ ERROR GRAVE:<br>${error.message}
+                </div>`;
+          })
+          .obtenerDatos();
       };
 
       function pintarNumeros(datos) {

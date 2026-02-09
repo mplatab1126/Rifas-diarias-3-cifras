@@ -22,9 +22,21 @@ function doGet(e) {
 
 function obtenerDatos() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(NOMBRE_HOJA);
-  // CAMBIO: Ahora pedimos 4 columnas (antes era 2) para leer nombre y teléfono
-  // El "4" al final indica la cantidad de columnas A, B, C, D
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+  
+  // --- 🛡️ VALIDACIÓN DE SEGURIDAD ---
+  if (!sheet) {
+    throw new Error(`¡ALERTA! No encontré la pestaña llamada "${NOMBRE_HOJA}". Revisa el nombre en el Google Sheet.`);
+  }
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    // Si la hoja existe pero está vacía (solo encabezados o nada)
+    return []; 
+  }
+  // ----------------------------------
+
+  // Pedimos 4 columnas: Número(A), Estado(B), Nombre(C), Teléfono(D)
+  return sheet.getRange(2, 1, lastRow - 1, 4).getValues();
 }
 
 function reservarNumeros(listaNumeros, nombre, telefono, ipUsuario) {
