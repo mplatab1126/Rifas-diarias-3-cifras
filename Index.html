@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+      /* --- 1. REGLA DE ORO (CORRECCIÓN DE DESBORDE) --- */
+      * {
+        box-sizing: border-box; /* Esto evita que el padding agrande las cajas */
+      }
+
+      /* --- 2. ESTILOS BASE --- */
+      body { 
+        font-family: 'Poppins', sans-serif; 
+        background-color: #f0f2f5; 
+        margin: 0;
+        padding: 0;
+        color: #333;
+        padding-bottom: 100px;
+      }
+      
+      .container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        background: #f0f2f5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden; /* Evita scroll horizontal indeseado */
+      }
+
+      /* --- 3. TARJETAS --- */
+      .card-section {
+        background: white;
+        border-radius: 16px;
+        padding: 20px 15px;
+        margin: 10px 10px 0 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        text-align: center;
+        position: relative;
+      }
+      
+      /* --- 4. ENCABEZADO --- */
+      .header {
+        text-align: center;
+        padding: 30px 20px 40px 20px;
+        background: linear-gradient(180deg, #051e11 0%, #0a3d24 100%);
+        border-radius: 0 0 30px 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        margin-bottom: 20px;
+        color: white;
+      }
+      
+      .logo-img { max-width: 180px; height: auto; display: block; margin: 0 auto 10px auto; }
+
+      .legal-box {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 0 auto;
+        display: inline-block;
+        font-size: 10px;
+        line-height: 1.4;
+        color: #e0e0e0;
+        text-align: left;
+      }
+
+      /* --- 5. PRECIOS Y TEXTOS --- */
+      .fecha-sorteo {
+        background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9;
+        padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: 700;
+        margin-top: -30px; margin-bottom: 10px; display: inline-block;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      .loteria-name { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 5px; }
+      .premio-mayor { font-size: 38px; font-weight: 800; color: #1b5e20; margin: 0; line-height: 1.1; letter-spacing: -1px; }
+
+      .price-tag {
+        background: #128C7E; color: white; padding: 12px; border-radius: 50px; 
+        font-size: 16px; font-weight: bold; margin: 20px 20px 10px 20px; 
+        text-align: center; box-shadow: 0 4px 12px rgba(18, 140, 126, 0.25);
+      }
+
+      /* --- 6. PASOS --- */
+      .steps-container { padding: 20px; }
+      .step-title { font-size: 14px; font-weight: 700; margin-bottom: 15px; text-align: center; color: #aaa; text-transform: uppercase; }
+      .steps-grid { display: flex; justify-content: space-around; gap: 10px; }
+      .step-box { text-align: center; font-size: 11px; color: #555; position: relative; }
+      .step-box::after { content: '→'; position: absolute; right: -15px; top: 10px; color: #ddd; font-size: 14px; }
+      .step-box:last-child::after { content: ''; }
+      .step-icon { font-size: 22px; display: block; margin-bottom: 5px; background: #fff; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; margin: 0 auto 5px auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+      /* --- 7. GRID DE NÚMEROS (CORREGIDO) --- */
+      .numbers-section { padding: 10px; }
+      
+      .grid-container {
+        display: grid;
+        /* En celular: 4 columnas */
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 8px;
+        width: 100%; /* Asegura que no se salga */
+      }
+
+      .btn-numero {
+        aspect-ratio: 1;
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 14px; /* Ajustado para que quepa bien */
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        color: #333;
+        cursor: pointer;
+        transition: transform 0.1s;
+        display: flex;
+        flex-direction: column; 
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        overflow: hidden; /* Evita que nombres largos rompan el botón */
+        word-break: break-all;
+      }
+      
+      .btn-numero:active { transform: scale(0.95); background: #f5f5f5; }
+      
+      .info-mini { font-size: 8px; color: #666; font-weight: 400; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+
+      .seleccionado {
+        background-color: #ff9800 !important; color: white !important; 
+        border: 1px solid #f57c00 !important; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3) !important;
+        transform: scale(1.02);
+      }
+      .ocupado { background-color: #eeeeee; color: #bdbdbd; border-color: transparent; cursor: not-allowed; opacity: 0.8; }
+      .disponible { color: #1b5e20; }
+
+      /* --- 8. BARRA FLOTANTE Y MODAL --- */
+      .bottom-bar {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: white; border-top: 1px solid #eee;
+        padding: 12px 20px; display: none; justify-content: space-between; align-items: center;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 900;
+      }
+      .btn-pagar-float {
+        background-color: #1b5e20; color: white; padding: 12px 30px;
+        border: none; border-radius: 50px; font-weight: 700; font-size: 15px;
+        box-shadow: 0 4px 10px rgba(27, 94, 32, 0.2); cursor: pointer;
+      }
+      .resumen-total { font-size: 18px; font-weight: 800; color: #1b5e20; }
+      .resumen-compra { font-size: 13px; color: #666; display: flex; flex-direction: column;}
+
+      .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+      }
+      .modal-content {
+        background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 340px;
+      }
+      .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; background: #f9f9f9; outline: none; margin-bottom: 15px;}
+      .input-group label { font-weight: 600; font-size: 12px; color: #555; margin-bottom: 5px; display: block;}
+      .btn-confirmar { width: 100%; padding: 14px; background: #1b5e20; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer;}
+      .btn-cancelar { width: 100%; padding: 10px; background: transparent; color: #777; border: none; font-weight: 600; cursor: pointer; margin-top: 5px;}
+      
+      .prize-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+      .prize-item:last-child { border-bottom: none; }
+      .prize-value { font-weight: 700; color: #333; }
+      .rule-box { background: #f1f8e9; border-left: 3px solid #4caf50; padding: 10px; font-size: 11px; color: #33691e; text-align: left; margin-top: 15px; border-radius: 4px;}
+      .secondary-prizes { margin: 0; padding: 0; }
+
+      /* --- 9. VERSIÓN COMPUTADOR (RESPONSIVE CORREGIDO) --- */
+      @media (min-width: 768px) {
+        .container {
+          max-width: 900px;
+          margin: 30px auto;
+          border-radius: 20px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          overflow: hidden; /* Esto mantiene todo dentro de la tarjeta */
+          min-height: auto;
+        }
+        
+        .grid-container {
+          /* En computador mostramos 10 columnas para que sea vea ordenado (0-9) */
+          grid-template-columns: repeat(10, 1fr); 
+          gap: 10px;
+          padding: 20px;
+        }
+        
+        .btn-numero {
+          font-size: 14px;
+        }
+
+        .header { border-radius: 0; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      
+      <div class="header">
+        <img src="https://losplata.s3.us-east-2.amazonaws.com/Logo.png" alt="Los Plata" class="logo-img">
+        
+        <div class="legal-box">
+          <strong>LOS PLATA S.A.S.</strong>
+          NIT: 902.003.134<br>
+          Rep. Legal: Mateo Plata Buitrago<br>
+          Cra 6 #12-04 Local 2, Chinchiná - Caldas
+        </div>
+      </div>
+
+      <div class="hero-section">
+        
+        <div class="card-section" style="margin-top: -20px; z-index: 10;">
+          <div class="fecha-sorteo" style="margin-top: -35px; background: white; border: 1px solid #eee; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+            📅 Juega el 2 de Febrero
+          </div>
+
+          <div class="loteria-name" style="margin-top: 10px;">Lotería de Cundinamarca</div>
+          <h1 class="premio-mayor" style="font-size: 48px; margin: 5px 0 10px 0;">$800.000</h1>
+          <div style="font-size: 13px; color: #1b5e20; font-weight: 600; background: #e8f5e9; display: inline-block; padding: 4px 12px; border-radius: 8px;">
+            ✨ ¡3 Oportunidades de Ganar! ✨
+          </div>
+        </div>
+
+        <div class="card-section">
+          <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px;">
+            📋 Tabla de Premios
+          </h3>
+
+          <div class="secondary-prizes">
+            <div class="prize-item">
+              <span class="prize-label">🏆 Últimas 3 cifras</span>
+              <span class="prize-value">$800.000</span>
+            </div>
+            <div class="prize-item">
+              <span class="prize-label">🏆 Primeras 3 cifras</span>
+              <span class="prize-value">$800.000</span>
+            </div>
+            <div class="prize-item">
+              <span class="prize-label">🏆 3 Cifras del medio</span>
+              <span class="prize-value">$800.000</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="price-tag">
+        🔥 PROMO: 3 Boletas por $15.000
+      </div>
+
+      <div class="steps-container">
+        <div class="step-title">Pasos para jugar</div>
+        <div class="steps-grid">
+          <div class="step-box">
+            <span class="step-icon">👆</span>
+            <strong>Escoge</strong><br>tu número
+          </div>
+          <div class="step-box">
+            <span class="step-icon">✍️</span>
+            <strong>Llena</strong><br>tus datos
+          </div>
+          <div class="step-box">
+            <span class="step-icon">💬</span>
+            <strong>WhatsApp</strong><br>para pagar
+          </div>
+        </div>
+      </div>
+
+      <div class="numbers-section">
+        
+        <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+          
+          <input type="number" id="input-busqueda" placeholder="🔍 Buscar número específico..." 
+                 oninput="filtrarNumeros()" 
+                 style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; text-align: center; outline: none; transition: 0.3s;">
+          
+          <label style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; color: #555; cursor: pointer; background: white; padding: 10px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <input type="checkbox" id="chk-disponibles" onchange="filtrarNumeros()" style="width: 18px; height: 18px; accent-color: #1b5e20;" checked>
+            <span>🟢 Mostrar solo números disponibles</span>
+          </label>
+
+        </div>
+        
+        <div id="loading" style="text-align:center; color:#999; padding:20px;">Cargando boletas...</div>
+        <div id="grid" class="grid-container"></div>
+      </div>
+
+    </div>
+
+    <div id="bottom-bar" class="bottom-bar">
+      <div class="resumen-compra">
+        <span id="qty-text">0 boletas</span>
+        <span id="total-text" class="resumen-total">$0</span>
+      </div>
+      <button class="btn-pagar-float" onclick="abrirModal()">Comprar</button>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+      <div class="modal-content">
+        <h3 style="text-align:center; margin-top:0; color:#333;">Reservar: <span id="num-modal" style="font-size: 24px; color:#1b5e20;"></span></h3>
+        <p style="text-align:center; color:#666; font-size:13px; margin-bottom:25px;">Ingresa tus datos para apartar:</p>
+        
+        <div class="input-group">
+          <label>Nombre Completo</label>
+          <input type="text" id="input-nombre" placeholder="Tu nombre aquí">
+        </div>
+        
+        <div class="input-group">
+          <label>Celular / WhatsApp</label>
+          <input type="tel" id="input-telefono" placeholder="Ej: 3001234567" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+        </div>
+
+        <button class="btn-confirmar" onclick="confirmarReserva()">Confirmar Reserva</button>
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+        
+        <div id="msg-carga" class="loader">
+          🔄 Guardando...<br>
+          <span style="font-size:12px; font-weight:normal; color:#666;">Te enviaremos a WhatsApp enseguida</span>
+        </div>
+      </div>
+      
+       <div id="modal-soldout" class="modal-overlay">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="color:#d32f2f; margin-top:0; font-size: 24px;">🚫 ¡SOLD OUT! 🚫</h2>
+        <h3 style="color:#333;">SE ACABARON</h3>
+        
+        <p style="font-size:15px; color:#555; line-height: 1.6;">
+          ¡Hoy arrasaron con todo! 😱<br>
+          Muchas gracias por el apoyo.
+        </p>
+        
+        <p style="font-size:15px; color:#1b5e20; font-weight:bold;">
+          Mañana volvemos con más suerte y nuevos números.<br>
+          ¡Atentos al grupo!
+        </p>
+
+        <button class="btn-confirmar" onclick="cerrarSoldOut()">Aceptar</button>
+      </div>
+    </div>
+
+    </div>
+
+    <script>
+      const PRECIO_BOLETA = 5000;
+      let numerosSeleccionados = [];
+
+      window.onload = function() {
+        google.script.run.withSuccessHandler(pintarNumeros).obtenerDatos();
+      };
+
+      function pintarNumeros(datos) {
+        const contenedor = document.getElementById('grid');
+        document.getElementById('loading').style.display = 'none';
+        contenedor.innerHTML = ""; 
+        
+        let contadorDisponibles = 0;
+
+        datos.forEach(fila => {
+          const numero = fila[0];
+          const estado = String(fila[1]).trim(); 
+          const nombreCliente = fila[2] || "Anónimo"; 
+          const telCliente = String(fila[3] || "");
+          
+          if (estado === 'Disponible' && String(numero).trim() !== "") {
+           contadorDisponibles++;
+          }
+
+          const telOculto = telCliente.length > 4 
+            ? "Tel:.." + telCliente.slice(-4) 
+            : telCliente;
+
+          const btn = document.createElement('button');
+          btn.id = 'btn-' + numero;
+          btn.className = 'btn-numero ' + (estado === 'Disponible' ? 'disponible' : 'ocupado');
+
+          if (estado === 'Disponible') {
+            btn.innerText = numero;
+            btn.onclick = function() { toggleSeleccion(numero, btn) };
+            btn.title = "Clic para seleccionar";
+          } else {
+            btn.innerHTML = `
+              <span style="font-size:18px; color:#888; font-weight:700;">${numero}</span>
+              <span class="info-mini" style="font-weight:bold; color:#333;">${nombreCliente}</span>
+              <span class="info-mini" style="color:#666;">${telOculto}</span>
+            `;
+            btn.onclick = null; 
+            btn.style.cursor = "default";
+          }
+          
+          contenedor.appendChild(btn);
+        });
+        
+         if (contadorDisponibles === 0) {
+          document.getElementById('modal-soldout').style.display = 'flex';
+        }
+
+        // --- NUEVO: ESTO APLICA EL FILTRO INMEDIATAMENTE AL CARGAR ---
+        filtrarNumeros(); 
+      }
+
+      // --- FUNCIÓN DE FILTRADO INTELIGENTE (Texto + Checkbox) ---
+      function filtrarNumeros() {
+        // 1. Obtenemos lo que escribió el usuario
+        const busqueda = document.getElementById('input-busqueda').value.trim();
+        // 2. Obtenemos si el checkbox está marcado (true o false)
+        const chk = document.getElementById('chk-disponibles');
+        const soloDisponibles = chk ? chk.checked : false;
+        
+        const grid = document.getElementById('grid');
+        const botones = grid.getElementsByClassName('btn-numero');
+
+        for (let btn of botones) {
+          // El ID es "btn-001", quitamos "btn-" para tener el número puro
+          const numeroDelBoton = btn.id.replace('btn-', '');
+          
+          // Verificamos si este botón es de los disponibles
+          const esDisponible = btn.classList.contains('disponible');
+
+          // --- REGLAS DE FILTRO ---
+          
+          // Regla 1: ¿Coincide con el número buscado? (Si no escribió nada, todos coinciden)
+          const coincideTexto = numeroDelBoton.includes(busqueda);
+          
+          // Regla 2: ¿Cumple con ser disponible?
+          // Si el checkbox NO está marcado (!soloDisponibles), nos da igual si es ocupado o no.
+          // Si el checkbox SÍ está marcado, forzamos a que (esDisponible) sea true.
+          const cumpleEstado = !soloDisponibles || esDisponible;
+
+          // Si cumple AMBAS cosas, lo mostramos
+          if (coincideTexto && cumpleEstado) {
+            btn.style.display = 'flex';
+          } else {
+            btn.style.display = 'none';
+          }
+        }
+      }
+
+      function toggleSeleccion(numero, btn) {
+        const index = numerosSeleccionados.indexOf(numero);
+        
+        if (index === -1) {
+          if (numerosSeleccionados.length >= 20) {
+            alert("⚠️ Límite alcanzado:\nSolo puedes comprar un máximo de 20 boletas por pedido.");
+            return;
+          }
+          numerosSeleccionados.push(numero);
+          btn.classList.add('seleccionado');
+        } else {
+          numerosSeleccionados.splice(index, 1);
+          btn.classList.remove('seleccionado');
+        }
+        
+        actualizarBarra();
+      }
+
+      function actualizarBarra() {
+        const bar = document.getElementById('bottom-bar');
+        const qtyText = document.getElementById('qty-text');
+        const totalText = document.getElementById('total-text');
+
+        if (numerosSeleccionados.length > 0) {
+          bar.style.display = 'flex';
+          qtyText.innerText = numerosSeleccionados.length + (numerosSeleccionados.length === 1 ? " boleta" : " boletas");
+          const total = numerosSeleccionados.length * PRECIO_BOLETA;
+          totalText.innerText = "$" + total.toLocaleString('es-CO');
+        } else {
+          bar.style.display = 'none';
+        }
+      }
+
+      function abrirModal() {
+        if (numerosSeleccionados.length === 0) return;
+        if (numerosSeleccionados.length < 3) {
+          alert("⚠️ COMPRA MÍNIMA:\n\nPara participar, debes adquirir al menos 3 boletas.");
+          return;
+        }
+        document.getElementById('num-modal').innerText = numerosSeleccionados.join(", ");
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('msg-carga').style.display = 'none';
+      }
+
+      function cerrarModal() {
+        document.getElementById('modal').style.display = 'none';
+      }
+
+      function confirmarReserva() {
+        // --- AQUÍ ESTÁ EL CAMBIO: Agregamos .trim() al final ---
+        const nombre = document.getElementById('input-nombre').value.trim();
+        // --------------------------------------------------------
+        
+        const telefono = document.getElementById('input-telefono').value;
+
+        // Validación estricta
+        if (!nombre || telefono.length !== 10) {
+          alert("⚠️ ATENCIÓN:\n\nPor favor verifica tus datos:\n1. El nombre no puede estar vacío.\n2. El celular debe tener 10 dígitos.");
+          return;
+        }
+
+        // Mostramos cargando
+        document.getElementById('msg-carga').style.display = 'block';
+        document.querySelector('.btn-confirmar').disabled = true; 
+        
+        // --- CAPTURA DE IP ---
+        fetch('https://api.ipify.org?format=json')
+          .then(response => response.json())
+          .then(data => {
+             enviarAlServidor(data.ip);
+          })
+          .catch(error => {
+             console.log("No se pudo detectar IP, enviando sin IP.");
+             enviarAlServidor("IP_NO_DETECTADA");
+          });
+
+        function enviarAlServidor(ip) {
+            google.script.run.withSuccessHandler(function(respuesta) {
+              if (respuesta.exito) {
+                window.top.location.href = respuesta.url;
+              } else {
+                alert(respuesta.error);
+                // Si falla, reactivamos el botón y ocultamos carga
+                document.getElementById('msg-carga').style.display = 'none';
+                document.querySelector('.btn-confirmar').disabled = false;
+                // Opcional: recargar si prefieres
+                // location.reload(); 
+              }
+            }).reservarNumeros(numerosSeleccionados, nombre, telefono, ip);
+        }
+      }
+      
+      function cerrarSoldOut() {
+        document.getElementById('modal-soldout').style.display = 'none';
+      }
+    </script>
+  </body>
+</html>

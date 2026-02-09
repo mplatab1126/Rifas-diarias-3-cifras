@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    :root {
+      --ink: #244a3e; --muted: #7ea094; --bg: #f6fbf9; 
+      --ring: #dfe9e5; --accent: #3cb579; --accent-2: #1e8f5c;
+      --card: #ffffff; --pill: #edf7f2; --selected: #ff9800;
+      --shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+    
+    * { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 20px; }
+    
+    .shell { max-width: 800px; margin: 0 auto; }
+
+    /* TARJETAS ESTILO "LA PERLA" */
+    .section-card {
+      background: var(--card); border: 1px solid var(--ring); border-radius: 24px;
+      box-shadow: var(--shadow); padding: 28px 32px; margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-size: 1.1rem; font-weight: 800; color: var(--ink); text-transform: uppercase;
+      margin: 0 0 20px 0; padding-bottom: 12px; border-bottom: 2px solid var(--ring);
+    }
+
+    /* GRID DE BÚSQUEDA (2 COLUMNAS) */
+    .grid-2t { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    @media (max-width: 768px) { .grid-2t { grid-template-columns: 1fr; gap: 20px; } }
+
+    label { display: block; font-weight: 700; color: var(--muted); margin-bottom: 8px; font-size: 0.85rem; }
+
+    /* INPUTS TIPO PÍLDORA */
+    .field {
+      display: flex; align-items: center; background: #fcfdfd; border: 1px solid var(--ring);
+      border-radius: 12px; padding: 10px 14px; transition: all 0.2s;
+    }
+    .field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(60,181,121,0.1); }
+    .pill { width: 100%; border: 0; outline: 0; font-size: 16px; background: transparent; color: var(--ink); font-weight: 600; }
+
+    /* TIME PICKER CUSTOM */
+    .time-box { display: flex; align-items: center; gap: 10px; }
+    .time-field {
+      flex: 1; display: flex; align-items: center; gap: 5px; background: #fcfdfd;
+      border: 1px solid var(--ring); border-radius: 12px; padding: 8px 12px;
+    }
+    .time-field input {
+      width: 100%; text-align: center; border: 0; outline: 0; font-size: 18px;
+      background: transparent; font-weight: 700; color: var(--ink);
+    }
+    .ampm {
+      border: 1px solid var(--ring); background: var(--pill); color: var(--ink);
+      font-weight: 800; border-radius: 8px; padding: 6px 10px; cursor: pointer; min-width: 50px;
+    }
+
+    /* OCR DROP */
+    .ocr-drop {
+      border: 2px dashed #cfe3dc; background: #fbfdfc; border-radius: 16px;
+      padding: 24px; text-align: center; font-weight: 700; color: var(--muted);
+      cursor: pointer; transition: all 0.2s; height: 100%; display: flex;
+      flex-direction: column; justify-content: center; align-items: center;
+    }
+    .ocr-drop:hover { border-color: var(--accent); background: #f0fdf4; }
+    .ocr-drop.drag { background: #e8f5e9; border-color: var(--accent); }
+
+    /* BOTONES */
+    .cta {
+      display: block; width: 100%; border: none; border-radius: 12px; padding: 12px;
+      font-weight: 700; font-size: 0.95rem; background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #fff; box-shadow: 0 4px 12px rgba(60,181,121,0.25); cursor: pointer; margin-top: 10px;
+    }
+    .cta:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cta-danger { background: #e74c3c; box-shadow: 0 4px 12px rgba(231,76,60,0.25); }
+
+    /* RESULTADOS */
+    .list-results { display: grid; gap: 10px; margin-top: 20px; }
+    .card-sm {
+      background: #fff; border: 1px solid var(--ring); border-radius: 12px; padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-left: 4px solid var(--accent);
+    }
+    .card-sm.used { border-left-color: #ccc; opacity: 0.7; background: #f9f9f9; }
+    .card-price { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+    .card-meta { font-size: 0.8rem; color: var(--muted); }
+    .btn-use { padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; border: none; font-weight: 700; cursor: pointer; }
+    .btn-ok { background: var(--pill); color: var(--accent-2); border: 1px solid var(--accent); }
+    .btn-no { background: #eee; color: #999; }
+
+    /* GRID BOLETAS - CORREGIDO */
+    .grid-container {
+      display: grid; /* <--- ESTO FALTABA */
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); /* Cajas pequeñas y adaptables */
+      gap: 10px; /* Espacio entre cuadritos */
+      margin-top: 15px;
+    }
+    .btn-num {
+      aspect-ratio: 1; border: 1px solid #eee; border-radius: 10px; background: #fff;
+      font-weight: 700; color: #aaa; cursor: not-allowed; display: flex;
+      flex-direction: column; align-items: center; justify-content: center; font-size: 14px;
+      opacity: 0.5;
+    }
+    .btn-num.reservado {
+      background: #e3f2fd; color: #1565c0; border-color: #90caf9; opacity: 1; cursor: pointer;
+      border-width: 2px;
+    }
+    .btn-num.seleccionado {
+      background: var(--selected); color: white; border-color: #f57c00; transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .cliente-mini { font-size: 8px; margin-top: 2px; overflow: hidden; white-space: nowrap; max-width: 90%; }
+
+    /* DETALLES PAGO */
+    .payment-summary {
+      background: #f0fdf4; border: 1px dashed var(--accent); border-radius: 16px; padding: 20px;
+      text-align: center; margin-top: 20px;
+    }
+    .big-money { font-size: 2rem; font-weight: 800; color: var(--ink); margin: 5px 0; }
+    .ref-badge { 
+      display: inline-block; background: #fff; padding: 4px 12px; border-radius: 20px; 
+      border: 1px solid var(--ring); font-size: 0.85rem; font-weight: 600; color: var(--muted);
+    }
+
+    /* --- AGREGA ESTO EN TU CSS --- */
+    .btn-num.pagado {
+      background-color: #c8e6c9; /* Verde claro */
+      color: #1b5e20;
+      border-color: #81c784;
+      cursor: not-allowed;       /* Bloqueado */
+      opacity: 0.8;
+    }
+    
+    /* Para que el texto "PAGADO" se vea pequeñito */
+    .estado-mini {
+      font-size: 8px; font-weight: 800; color: #1b5e20; margin-bottom: 2px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="shell">
+    <h1 style="text-align:center; color:var(--ink); margin-bottom: 5px;">GESTIÓN DE PAGOS</h1>
+    <p style="text-align:center; color:var(--muted); margin-bottom: 30px;">Selecciona boletas y busca el pago</p>
+
+    <div class="section-card">
+      <div class="section-title">1. Buscar Boletas para Abonar</div>
+      
+      <div class="field" style="margin-bottom: 20px;">
+        <span style="font-size: 20px; margin-right: 10px;">🔍</span>
+        <input type="number" id="inputBusquedaAbono" class="pill" 
+               placeholder="Buscar por boleta o celular..." 
+               oninput="filtrarAbonos()" autofocus>
+      </div>
+
+      <div id="gridNumeros" class="grid-container">
+        <div style="grid-column: 1 / -1; text-align: center; color: #aaa; padding: 20px;">
+          Escribe un número arriba para buscar...
+        </div>
+      </div>
+
+      <div style="text-align:right; font-size:0.85rem; color:var(--muted); margin-top:10px;">
+        <span id="selCount" style="font-weight:bold; color:var(--accent);">0</span> boletas seleccionadas para pago
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">2. Buscar Transferencia</div>
+      
+      <div class="grid-2t">
+        
+        <div>
+          <label>📅 Por Fecha y Hora</label>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="field"><input id="t_fecha" class="pill" type="date"></div>
+            
+            <div class="time-box">
+              <div class="time-field">
+                <span>⏱️</span>
+                <input id="t_hh" type="number" min="1" max="12" placeholder="hh">
+                <span style="font-weight:800; color:var(--muted)">:</span>
+                <input id="t_mm" type="number" min="0" max="59" placeholder="mm">
+                <button id="t_ampm" class="ampm">AM</button>
+              </div>
+            </div>
+
+            <button id="btnBuscarFecha" class="cta">Buscar por Fecha</button>
+          </div>
+        </div>
+
+        <div>
+          <label>📸 Por Comprobante (OCR)</label>
+          <div id="ocrDrop" class="ocr-drop" tabindex="0">
+            <div style="font-size:30px; margin-bottom:10px">🖼️</div>
+            <div id="ocrStatus" style="font-size:0.9rem">Pega aquí tu pantallazo<br>(CTRL + V)</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="listaResultados" class="list-results"></div>
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #eee;">
+        <button id="btnToggleManual" class="cta" onclick="toggleManual()" style="background: #fff; color: #555; border: 1px solid #ddd; box-shadow: none;">
+          📝 ¿No aparece? Ingresar Manualmente
+        </button>
+        
+        <div id="formManual" style="display: none; margin-top: 15px; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
+          <h4 style="margin: 0 0 10px 0; color: var(--ink);">Ingreso Directo</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label>Referencia</label>
+              <div class="field"><input id="man_ref" class="pill" placeholder="Ej: EFECTIVO"></div>
+            </div>
+            <div>
+              <label>Monto Total</label>
+              <div class="field"><input id="man_monto" type="number" class="pill" placeholder="$"></div>
+            </div>
+          </div>
+          <button onclick="usarManual()" class="cta" style="margin-top: 10px; background: #333; box-shadow: none;">Usar estos datos</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">3. Detalle Final</div>
+      
+      <div class="payment-summary">
+        <div class="ref-badge" id="lblRef">Sin Referencia</div>
+        <div class="big-money" id="lblMonto">$0</div>
+        <div id="lblDivision" style="color:var(--muted); font-size:0.9rem; margin-top:5px;">--</div>
+      </div>
+
+      <button id="btnConfirmar" class="cta" disabled onclick="confirmarPago()">CONFIRMAR PAGO</button>
+    </div>
+
+  </div>
+
+  <script>
+    // --- UTILS ---
+    const $ = id => document.getElementById(id);
+    const pad = n => String(n).padStart(2,'0');
+    
+    // --- ESTADO ---
+    let boletasData = [];
+    let seleccionados = [];
+    let pagoSeleccionado = null; // {monto, referencia, ...}
+
+    // --- INICIO ---
+    window.onload = function() {
+      // Poner fecha de hoy por defecto
+      const hoy = new Date();
+      $('t_fecha').value = hoy.toISOString().slice(0,10);
+      
+      google.script.run.withSuccessHandler(pintarGrid).obtenerListaNumeros();
+    };
+
+    // --- NUEVAS FUNCIONES DE BÚSQUEDA ---
+
+    function pintarGrid(datos) {
+      // SOLO GUARDAMOS LOS DATOS, NO PINTAMOS NADA AÚN
+      boletasData = datos;
+      document.getElementById('loaderGrid').style.display = 'none';
+      // Dejamos el grid quieto esperando que el usuario busque
+    }
+
+    function filtrarAbonos() {
+      const busqueda = document.getElementById('inputBusquedaAbono').value.trim();
+      const grid = document.getElementById('gridNumeros');
+      grid.innerHTML = ""; 
+
+      if (busqueda.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #aaa; padding: 20px;">Escribe número o teléfono para buscar...</div>';
+        return;
+      }
+
+      // --- AQUÍ ESTÁ LA MAGIA ---
+      // Filtramos si coincide con el NÚMERO DE BOLETA -O- con el TELÉFONO
+      const resultados = boletasData.filter(b => {
+        const numStr = b.numero.toString();
+        const telStr = (b.telefono || "").toString(); 
+        
+        return numStr.includes(busqueda) || telStr.includes(busqueda);
+      });
+      // --------------------------
+
+      if (resultados.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #e57373;">No encontré nada con ese dato.</div>';
+        return;
+      }
+
+      resultados.forEach(b => {
+        const btn = document.createElement('div');
+        
+        const estadoReserva = String(b.estado).trim();
+        const estadoPago = String(b.pago).trim().toUpperCase(); 
+        const esPagado = estadoPago === 'PAGADO';
+        const esReservado = estadoReserva === 'Reservado';
+        const estaSeleccionado = seleccionados.includes(b.numero);
+
+        if (esPagado) {
+           btn.className = 'btn-num pagado';
+           // Agregué el teléfono chiquito también para confirmar visualmente
+           btn.innerHTML = `<span class="estado-mini">✔ PAGADO</span><span>${b.numero}</span><span class="cliente-mini">${b.nombre}</span>`;
+
+        } else if (esReservado) {
+           btn.className = 'btn-num reservado' + (estaSeleccionado ? ' seleccionado' : '');
+           btn.id = 'b-' + b.numero;
+           btn.innerHTML = `<span>${b.numero}</span><span class="cliente-mini">${b.nombre}</span>`;
+           btn.onclick = () => toggleSeleccion(b.numero, btn);
+
+        } else {
+           btn.className = 'btn-num desactivado';
+           btn.innerHTML = `<span>${b.numero}</span><span class="cliente-mini" style="color:#ccc">Libre</span>`;
+        }
+        
+        grid.appendChild(btn);
+      });
+    }
+
+    function toggleSeleccion(num, btn) {
+      const idx = seleccionados.indexOf(num);
+      if (idx === -1) {
+        seleccionados.push(num);
+        btn.classList.add('seleccionado');
+      } else {
+        seleccionados.splice(idx, 1);
+        btn.classList.remove('seleccionado');
+      }
+      $('selCount').innerText = seleccionados.length;
+      actualizarCalculos();
+    }
+
+    // --- LÓGICA FECHA / HORA ---
+    $('t_ampm').onclick = () => {
+      const el = $('t_ampm');
+      el.innerText = el.innerText === 'AM' ? 'PM' : 'AM';
+    };
+
+    $('btnBuscarFecha').onclick = () => {
+      const fecha = $('t_fecha').value;
+      let hh = parseInt($('t_hh').value) || 0;
+      let mm = parseInt($('t_mm').value) || 0;
+      const ampm = $('t_ampm').innerText;
+
+      if(!fecha || hh === 0) return alert("Ingresa fecha y hora completa");
+
+      // Formato HH:MM AM/PM exacto como en el Excel
+      const hora12 = `${pad(hh)}:${pad(mm)} ${ampm}`;
+      
+      $('btnBuscarFecha').innerText = "Buscando...";
+      $('btnBuscarFecha').disabled = true;
+      $('listaResultados').innerHTML = "";
+
+      google.script.run
+        .withSuccessHandler(res => {
+          $('btnBuscarFecha').innerText = "Buscar por Fecha";
+          $('btnBuscarFecha').disabled = false;
+          
+          if(res.status === 'ok') {
+            mostrarResultados(res.lista);
+          } else {
+            alert("Error: " + res.mensaje);
+          }
+        })
+        .buscarTransferenciasPorFecha(fecha, hora12);
+    };
+
+    // --- LÓGICA OCR (PEGAR) ---
+    const ocrDrop = $('ocrDrop');
+    
+    ocrDrop.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          procesarImagen(blob);
+          e.preventDefault();
+          return;
+        }
+      }
+    });
+
+    async function procesarImagen(blob) {
+      $('ocrStatus').innerText = "⏳ Leyendo...";
+      try {
+        const res = await Tesseract.recognize(blob, 'spa');
+        const texto = res.data.text;
+        
+        // 1. Buscamos la Referencia (Mxxxx o números largos)
+        const palabras = texto.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/);
+        const ref = palabras.find(p => /^M[0-9]{4,}/.test(p)) || palabras.find(p => /^[0-9]{6,}/.test(p));
+        
+        if(ref) {
+          $('ocrStatus').innerText = "✅ Ref: " + ref + " (Buscando...)";
+          
+          // Llenamos el campo manual por si acaso falla la búsqueda automática
+          const inputManual = document.getElementById('man_ref');
+          if(inputManual) inputManual.value = ref;
+
+          // --- CORRECCIÓN: ORDENAMOS BUSCAR EN EL SERVIDOR INMEDIATAMENTE ---
+          google.script.run.withSuccessHandler(res => {
+            if(res.status === 'ok' && res.encontrada) {
+               $('ocrStatus').innerText = "✅ ¡Encontrada!";
+               mostrarResultados([res.datos]); // Mostramos la tarjeta bonita
+               seleccionarTransferencia(res.datos); // La seleccionamos de una vez
+            } else {
+               $('ocrStatus').innerText = "⚠️ Ref " + ref + " no está en Central.";
+               // Si no está, abrimos el formulario manual para que el usuario complete
+               toggleManual(); 
+            }
+          }).buscarTransferenciaPorReferencia(ref);
+          // ------------------------------------------------------------------
+
+        } else {
+          $('ocrStatus').innerText = "⚠️ No vi la referencia. Ingresa Manual.";
+        }
+      } catch(e) {
+        console.error(e);
+        $('ocrStatus').innerText = "❌ Error OCR";
+      }
+    }
+
+    $('btnBuscarRef').onclick = () => {
+      const ref = $('refManual').value.trim();
+      if(ref.length < 4) return alert("Referencia muy corta");
+      
+      $('btnBuscarRef').innerText = "...";
+      
+      google.script.run.withSuccessHandler(res => {
+        $('btnBuscarRef').innerText = "🔍";
+        if(res.status === 'ok' && res.encontrada) {
+          mostrarResultados([res.datos]);
+        } else {
+          $('listaResultados').innerHTML = `<div style="text-align:center; padding:10px; color:#c62828;">No encontrada en Central</div>`;
+        }
+      }).buscarTransferenciaPorReferencia(ref);
+    };
+
+    // --- MOSTRAR RESULTADOS ---
+    function mostrarResultados(lista) {
+      const div = $('listaResultados');
+      div.innerHTML = "";
+      
+      if(lista.length === 0) {
+        div.innerHTML = `<div style="text-align:center; padding:10px; color:#777;">No hay transferencias exactas en ese minuto.</div>`;
+        return;
+      }
+
+      lista.forEach(t => {
+        const card = document.createElement('div');
+        const ocupado = t.yaUsada;
+        
+        card.className = `card-sm ${ocupado ? 'used' : ''}`;
+        
+        // Formato moneda
+        const fmt = new Intl.NumberFormat('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0}).format(t.monto);
+
+        card.innerHTML = `
+          <div>
+            <div class="card-price">${fmt}</div>
+            <div class="card-meta">${t.plataforma} • ${t.referencia}</div>
+            <div class="card-meta">${t.hora}</div>
+          </div>
+          ${ocupado 
+            ? `<button class="btn-use btn-no" disabled>ASIGNADA</button>` 
+            : `<button class="btn-use btn-ok" id="btn-t-${t.referencia}">USAR</button>`
+          }
+        `;
+
+        if(!ocupado) {
+          card.querySelector('button').onclick = () => seleccionarTransferencia(t);
+        }
+        
+        div.appendChild(card);
+      });
+    }
+
+    function seleccionarTransferencia(t) {
+      pagoSeleccionado = t;
+      $('lblRef').innerText = t.referencia;
+      
+      // Resaltar visualmente
+      const allBtns = document.querySelectorAll('.btn-use');
+      allBtns.forEach(b => { b.innerText = "USAR"; b.className = "btn-use btn-ok"; });
+      const myBtn = document.getElementById(`btn-t-${t.referencia}`);
+      if(myBtn) { myBtn.innerText = "✅"; myBtn.className = "btn-use btn-ok"; style="background:var(--ink); color:white;"}
+      
+      actualizarCalculos();
+    }
+
+    // --- CÁLCULOS FINALES CON VALIDACIÓN DE $5.000 ---
+    function actualizarCalculos() {
+      const count = seleccionados.length;
+      const monto = pagoSeleccionado ? pagoSeleccionado.monto : 0;
+      
+      const fmtMonto = new Intl.NumberFormat('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0}).format(monto);
+      $('lblMonto').innerText = fmtMonto;
+
+      // 1. Validamos que haya boletas y dinero seleccionado
+      if(count > 0 && monto > 0) {
+        
+        const valorPorBoleta = monto / count;
+        const fmtDiv = new Intl.NumberFormat('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0}).format(valorPorBoleta);
+        
+        // --- 🔒 AQUÍ ESTÁ LA CONDICIÓN DE LOS $5.000 ---
+        if (valorPorBoleta === 5000) {
+           // TODO OK: Es exacto
+           $('lblDivision').innerHTML = `<span style="color:#1b5e20;">✅ Perfecto: <b>${fmtDiv}</b> por cada una.</span>`;
+           $('btnConfirmar').disabled = false;
+           $('btnConfirmar').style.opacity = "1";
+           $('btnConfirmar').innerText = "CONFIRMAR PAGO";
+        } else {
+           // ERROR: No da 5000 exactos
+           $('lblDivision').innerHTML = `<span style="color:#d32f2f; font-weight:bold;">⛔ ERROR: Da ${fmtDiv} por boleta.</span><br><span style="font-size:11px; color:#d32f2f;">El abono debe ser exactamente de $5.000 por número.</span>`;
+           $('btnConfirmar').disabled = true;
+           $('btnConfirmar').style.opacity = "0.5";
+           $('btnConfirmar').innerText = "BLOQUEADO (Valor incorrecto)";
+        }
+
+      } else {
+        $('lblDivision').innerText = "Selecciona boletas y un pago válido";
+        $('btnConfirmar').disabled = true;
+        $('btnConfirmar').innerText = "CONFIRMAR PAGO";
+      }
+    }
+
+    // --- LÓGICA MANUAL ---
+    function toggleManual() {
+      const f = document.getElementById('formManual');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function usarManual() {
+      const ref = document.getElementById('man_ref').value.trim() || "MANUAL";
+      const monto = parseInt(document.getElementById('man_monto').value) || 0;
+
+      if (monto <= 0) return alert("⚠️ Por favor ingresa un monto válido mayor a 0.");
+
+      // Creamos un objeto de pago "falso" pero compatible
+      const pagoManual = {
+        referencia: ref,
+        monto: monto,
+        plataforma: "Manual/Efectivo",
+        hora: "Ingreso Directo",
+        esManual: true // Marca importante para no buscar en Central
+      };
+
+      // Usamos la misma función visual para mostrarlo como tarjeta seleccionada
+      mostrarResultados([pagoManual]);
+      
+      // Lo seleccionamos automáticamente
+      seleccionarTransferencia(pagoManual);
+      
+      // Ocultamos el formulario para limpiar visualmente
+      toggleManual();
+    }
+
+    function confirmarPago() {
+      if(!pagoSeleccionado || seleccionados.length === 0) return;
+      
+      if(!confirm("¿Confirmar pago manual o automático?")) return;
+      
+      const btn = document.getElementById('btnConfirmar');
+      btn.innerText = "GUARDANDO...";
+      btn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if(res.exito) {
+            // SOLO si NO es manual, actualizamos la Central
+            if (!pagoSeleccionado.esManual && pagoSeleccionado.sheet && pagoSeleccionado.row) {
+                google.script.run.asignarTransferencia(pagoSeleccionado.sheet, pagoSeleccionado.row, `Rifa #${seleccionados.join(',')}`);
+            }
+            
+            alert("✅ " + res.mensaje);
+            location.reload();
+          } else {
+            alert("Error: " + res.error);
+            btn.innerText = "CONFIRMAR PAGO";
+            btn.disabled = false;
+          }
+        })
+        .registrarPagoMasivo(seleccionados, pagoSeleccionado.referencia, pagoSeleccionado.monto, "Web");
+    }
+
+  </script>
+</body>
+</html>
