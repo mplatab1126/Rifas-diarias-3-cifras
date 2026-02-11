@@ -586,3 +586,45 @@ function generarTablaClientes() {
   hojaReporte.autoResizeColumns(1, 8);
   SpreadsheetApp.getUi().alert("✅ ¡Tabla Generada!\n\nRevisa la hoja 'REPORTE_CLIENTES'.\nEn las columnas G y H verás el resumen de hojas sumadas.");
 }
+
+// ==========================================
+// 🔮 FUNCIONES DEL ORÁCULO (SERVIDOR SEGURO)
+// ==========================================
+
+function consultarGeminiDesdeServidor(textoUsuario) {
+  // 1. AQUÍ PEGAS TU CLAVE REAL ENTRE LAS COMILLAS
+  const API_KEY = "AIzaSyBu3j7iip3_qlvGO7JvgoB3z16h-VVQVDs"; 
+
+  // Configuración de la petición a Google
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
+  
+  const prompt = "Actúa como un oráculo de lotería. El usuario dice: '" + textoUsuario + "'. " +
+      "Basado en esto, sugiere 1 número de 3 cifras (000-999). " +
+      "Responde SOLO JSON: {\"numeros\": [\"123\"], \"mensaje\": \"Tu frase mística aquí.\"}";
+
+  const payload = {
+    "contents": [{ "parts": [{ "text": prompt }] }]
+  };
+
+  const options = {
+    "method": "post",
+    "contentType": "application/json",
+    "payload": JSON.stringify(payload),
+    "muteHttpExceptions": true
+  };
+
+  try {
+    // El servidor hace la llamada (nadie ve esto)
+    const response = UrlFetchApp.fetch(url, options);
+    const data = JSON.parse(response.getContentText());
+    
+    // Devolvemos solo la respuesta de texto al navegador
+    if (data.candidates && data.candidates[0].content) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error("No hubo respuesta clara del oráculo.");
+    }
+  } catch (e) {
+    throw new Error("Error interno del Oráculo: " + e.message);
+  }
+}
